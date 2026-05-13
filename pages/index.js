@@ -99,6 +99,7 @@ const reader = new FileReader();
 
 reader.onload = () => {
 setImage(reader.result);
+setResult(null);
 };
 
 reader.readAsDataURL(file);
@@ -122,12 +123,21 @@ image,
 
 const data = await res.json();
 
+if (data.error) {
+throw new Error(data.error);
+}
+
 setResult(data);
 } catch (err) {
-alert(err.message);
+alert("分析失败：" + err.message);
 } finally {
 setLoading(false);
 }
+}
+
+function resetAll() {
+setImage(null);
+setResult(null);
 }
 
 return (
@@ -135,7 +145,7 @@ return (
 style={{
 minHeight: "100vh",
 background: COLORS.cream,
-padding: 30,
+padding: 20,
 fontFamily: "serif",
 }}
 >
@@ -145,17 +155,29 @@ maxWidth: 900,
 margin: "0 auto",
 }}
 >
+{/* Header */}
 <div
 style={{
 textAlign: "center",
 marginBottom: 40,
+marginTop: 20,
 }}
 >
+<div
+style={{
+fontSize: 50,
+marginBottom: 10,
+}}
+>
+🌸
+</div>
+
 <h1
 style={{
 fontSize: 42,
 color: COLORS.textDeep,
 marginBottom: 10,
+fontWeight: "normal",
 }}
 >
 Lace Analyzer
@@ -172,16 +194,18 @@ AI FABRIC AESTHETIC ANALYSIS
 </div>
 </div>
 
+{/* Upload */}
 {!image && (
 <div
 onClick={() => inputRef.current.click()}
 style={{
 border: `2px dashed ${COLORS.dustyRose}`,
-borderRadius: 24,
+borderRadius: 28,
 padding: 60,
 background: COLORS.warmWhite,
 textAlign: "center",
 cursor: "pointer",
+transition: "0.3s",
 }}
 >
 <input
@@ -194,16 +218,16 @@ onChange={(e) => handleFile(e.target.files[0])}
 
 <div
 style={{
-fontSize: 60,
+fontSize: 70,
 marginBottom: 20,
 }}
 >
-🌸
+🕊️
 </div>
 
 <div
 style={{
-fontSize: 24,
+fontSize: 26,
 color: COLORS.textDeep,
 marginBottom: 10,
 }}
@@ -214,21 +238,24 @@ marginBottom: 10,
 <div
 style={{
 color: COLORS.textLight,
+fontSize: 15,
 }}
 >
-点击上传图片开始 AI 美学分析
+点击开始 AI 美学分析
 </div>
 </div>
 )}
 
+{/* Preview */}
 {image && (
 <>
 <div
 style={{
-borderRadius: 24,
+borderRadius: 28,
 overflow: "hidden",
 marginBottom: 20,
 boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+background: "#fff",
 }}
 >
 <img
@@ -236,12 +263,13 @@ src={image}
 alt="preview"
 style={{
 width: "100%",
-maxHeight: 500,
+maxHeight: 520,
 objectFit: "cover",
 }}
 />
 </div>
 
+{!result && (
 <button
 onClick={analyzeImage}
 disabled={loading}
@@ -249,7 +277,7 @@ style={{
 width: "100%",
 padding: 18,
 border: "none",
-borderRadius: 16,
+borderRadius: 18,
 background: COLORS.mauve,
 color: "#fff",
 fontSize: 18,
@@ -259,26 +287,32 @@ marginBottom: 30,
 >
 {loading ? "AI分析中..." : "开始AI美学分析"}
 </button>
+)}
 </>
 )}
 
+{/* Result */}
 {result && (
 <div
 style={{
 background: COLORS.warmWhite,
-borderRadius: 24,
+borderRadius: 28,
 padding: 30,
+marginBottom: 40,
 }}
 >
 <h2
 style={{
 marginBottom: 30,
 color: COLORS.textDeep,
+fontWeight: "normal",
+textAlign: "center",
 }}
 >
-美学分析报告
+✨ 美学分析报告
 </h2>
 
+{/* Scores */}
 <div
 style={{
 display: "grid",
@@ -293,14 +327,64 @@ marginBottom: 40,
 <ScoreRing score={result.style || 88} label="风格" />
 </div>
 
+{/* Summary */}
 <div
 style={{
 lineHeight: 2,
 color: COLORS.textMid,
 fontSize: 16,
+marginBottom: 30,
 }}
 >
 {result.summary}
+</div>
+
+{/* Buttons */}
+<div
+style={{
+display: "flex",
+gap: 12,
+flexWrap: "wrap",
+}}
+>
+<button
+onClick={resetAll}
+style={{
+flex: 1,
+minWidth: 200,
+padding: 16,
+border: "none",
+borderRadius: 16,
+background: COLORS.dustyRose,
+color: "#fff",
+fontSize: 16,
+cursor: "pointer",
+}}
+>
+重新分析另一张图片
+</button>
+
+<button
+onClick={() => {
+navigator.share?.({
+title: "Lace Analyzer",
+text: result.summary,
+});
+}}
+style={{
+flex: 1,
+minWidth: 200,
+padding: 16,
+border: "none",
+borderRadius: 16,
+background: COLORS.mauve,
+color: "#fff",
+fontSize: 16,
+cursor: "pointer",
+}}
+>
+分享分析结果
+</button>
 </div>
 </div>
 )}
