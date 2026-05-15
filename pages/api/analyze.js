@@ -30,8 +30,27 @@ contents: [
 {
 parts: [
 {
-text:
-"你是高级法式蕾丝布料美学分析师。请分析图片中的蕾丝、布料、发圈或饰品，并返回JSON格式：{color:0-100,material:0-100,detail:0-100,style:0-100,summary:'中文分析'}",
+text: `
+你是高级法式蕾丝布料美学分析师。
+
+请分析图片中的蕾丝、布料、发圈或饰品。
+
+必须严格只返回 JSON。
+
+不要 markdown。
+不要解释。
+不要 \`\`\`json。
+
+返回格式：
+
+{
+"color": 85,
+"material": 82,
+"detail": 90,
+"style": 88,
+"summary": "中文分析"
+}
+`,
 },
 {
 inline_data: {
@@ -48,8 +67,17 @@ data: base64Data,
 
 const data = await response.json();
 
+console.log("Gemini response:", data);
+
 const text =
 data.candidates?.[0]?.content?.parts?.[0]?.text || ""
+
+if (!text) {
+return res.status(500).json({
+error: "Gemini返回为空",
+raw: data,
+});
+}
 
 const jsonMatch = text.match(/\{[\s\S]*\}/);
 
@@ -60,7 +88,23 @@ raw: text,
 });
 }
 
-const result = JSON.parse(jsonMatch[0]);
+let cleanText = jsonMatch[0];
+
+cleanText = cleanText
+.replace(/```json/g, "")
+.replace(/```/g, "")
+.trim();
+
+let result;
+
+try {
+result = JSON.parse(cleanText);
+} catch (e) {
+return res.status(500).json({
+error: "JSON解析失败",
+raw: cleanText,
+});
+}
 
 return res.status(200).json(result);
 } catch (err) {
