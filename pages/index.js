@@ -97,9 +97,46 @@ if (!file) return;
 
 const reader = new FileReader();
 
-reader.onload = () => {
-setImage(reader.result);
+reader.onload = (e) => {
+const img = new Image();
+
+img.onload = () => {
+const canvas = document.createElement("canvas");
+
+const MAX = 800;
+
+let w = img.width;
+let h = img.height;
+
+if (w > h) {
+if (w > MAX) {
+h *= MAX / w;
+w = MAX;
+}
+} else {
+if (h > MAX) {
+w *= MAX / h;
+h = MAX;
+}
+}
+
+canvas.width = w;
+canvas.height = h;
+
+const ctx = canvas.getContext("2d");
+
+ctx.drawImage(img, 0, 0, w, h);
+
+const compressed = canvas.toDataURL(
+"image/jpeg",
+0.7
+);
+
+setImage(compressed);
 setResult(null);
+};
+
+img.src = e.target.result;
 };
 
 reader.readAsDataURL(file);
@@ -124,12 +161,18 @@ image,
 const data = await res.json();
 
 if (data.error) {
-throw new Error(data.error);
+throw new Error(
+data.error +
+(data.raw
+? "\n\n" +
+JSON.stringify(data.raw, null, 2)
+: "")
+);
 }
 
 setResult(data);
 } catch (err) {
-alert("分析失败：" + err.message);
+alert("分析失败：\n\n" + err.message);
 } finally {
 setLoading(false);
 }
@@ -205,7 +248,6 @@ padding: 60,
 background: COLORS.warmWhite,
 textAlign: "center",
 cursor: "pointer",
-transition: "0.3s",
 }}
 >
 <input
@@ -213,7 +255,9 @@ ref={inputRef}
 type="file"
 accept="image/*"
 style={{ display: "none" }}
-onChange={(e) => handleFile(e.target.files[0])}
+onChange={(e) =>
+handleFile(e.target.files[0])
+}
 />
 
 <div
@@ -254,7 +298,8 @@ style={{
 borderRadius: 28,
 overflow: "hidden",
 marginBottom: 20,
-boxShadow: "0 10px 30px rgba(0,0,0,0.08)",
+boxShadow:
+"0 10px 30px rgba(0,0,0,0.08)",
 background: "#fff",
 }}
 >
@@ -285,7 +330,9 @@ cursor: "pointer",
 marginBottom: 30,
 }}
 >
-{loading ? "AI分析中..." : "开始AI美学分析"}
+{loading
+? "AI分析中..."
+: "开始AI美学分析"}
 </button>
 )}
 </>
@@ -312,22 +359,36 @@ textAlign: "center",
 ✨ 美学分析报告
 </h2>
 
-{/* Scores */}
 <div
 style={{
 display: "grid",
-gridTemplateColumns: "repeat(4,1fr)",
+gridTemplateColumns:
+"repeat(4,1fr)",
 gap: 20,
 marginBottom: 40,
 }}
 >
-<ScoreRing score={result.color || 85} label="色彩" />
-<ScoreRing score={result.material || 82} label="材质" />
-<ScoreRing score={result.detail || 90} label="细节" />
-<ScoreRing score={result.style || 88} label="风格" />
+<ScoreRing
+score={result.color || 85}
+label="色彩"
+/>
+
+<ScoreRing
+score={result.material || 82}
+label="材质"
+/>
+
+<ScoreRing
+score={result.detail || 90}
+label="细节"
+/>
+
+<ScoreRing
+score={result.style || 88}
+label="风格"
+/>
 </div>
 
-{/* Summary */}
 <div
 style={{
 lineHeight: 2,
@@ -339,7 +400,6 @@ marginBottom: 30,
 {result.summary}
 </div>
 
-{/* Buttons */}
 <div
 style={{
 display: "flex",
