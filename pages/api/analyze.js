@@ -19,7 +19,7 @@ error: "No image",
 const base64Data = image.split(",")[1];
 
 const response = await fetch(
-`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`,
 {
 method: "POST",
 headers: {
@@ -28,49 +28,49 @@ headers: {
 body: JSON.stringify({
 contents: [
 {
+role: "user",
 parts: [
 {
 text: `
-你是高级法式蕾丝布料美学分析师。
+请分析这张蕾丝、布料或发圈图片。
 
-请分析图片中的蕾丝、布料、发圈或饰品。
-
-必须严格只返回 JSON。
-
-不要 markdown。
-不要解释。
-不要 \`\`\`json。
-
-返回格式：
+必须只返回 JSON：
 
 {
-"color": 85,
-"material": 82,
-"detail": 90,
-"style": 88,
+"color": 数字,
+"material": 数字,
+"detail": 数字,
+"style": 数字,
 "summary": "中文分析"
 }
 `,
 },
 {
-inline_data: {
-mime_type: "image/jpeg",
+inlineData: {
+mimeType: "image/jpeg",
 data: base64Data,
 },
 },
 ],
 },
 ],
+
+generationConfig: {
+temperature: 0.4,
+topK: 32,
+topP: 1,
+maxOutputTokens: 500,
+},
 }),
 }
 );
 
 const data = await response.json();
 
-console.log("Gemini response:", data);
+console.log("Gemini full:", JSON.stringify(data));
 
 const text =
-data.candidates?.[0]?.content?.parts?.[0]?.text || ""
+data?.candidates?.[0]?.content?.parts?.[0]?.text;
 
 if (!text) {
 return res.status(500).json({
@@ -79,32 +79,16 @@ raw: data,
 });
 }
 
-const jsonMatch = text.match(/\{[\s\S]*\}/);
+const match = text.match(/\{[\s\S]*\}/);
 
-if (!jsonMatch) {
+if (!match) {
 return res.status(500).json({
-error: "Gemini返回格式错误",
+error: "JSON提取失败",
 raw: text,
 });
 }
 
-let cleanText = jsonMatch[0];
-
-cleanText = cleanText
-.replace(/```json/g, "")
-.replace(/```/g, "")
-.trim();
-
-let result;
-
-try {
-result = JSON.parse(cleanText);
-} catch (e) {
-return res.status(500).json({
-error: "JSON解析失败",
-raw: cleanText,
-});
-}
+const result = JSON.parse(match[0]);
 
 return res.status(200).json(result);
 } catch (err) {
